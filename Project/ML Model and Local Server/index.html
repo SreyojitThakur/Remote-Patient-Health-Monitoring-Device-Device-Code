@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Risk Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Patient Risk Dashboard</h1>
+        <div id="table-container">
+            <h2>Latest Patient Data</h2>
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Blood Oxygen (%)</th>
+                        <th>Body Temperature (°C)</th>
+                        <th>Heart Rate (bpm)</th>
+                        <th>Atmospheric Temperature (°C)</th>
+                        <th>Relative Humidity</th>
+                        <th>Atmospheric Pressure</th>
+                        <th>Risk Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data %}
+                    <tr>
+                        <td>{{ row['created_at'] }}</td>
+                        <td>{{ row['Blood Oxygen (%)'] }}</td>
+                        <td>{{ row['Body Temperature (°C)'] }}</td>
+                        <td>{{ row['Heart Rate (bpm)'] }}</td>
+                        <td>{{ row['Atmospheric Temperature (°C)'] }}</td>
+                        <td>{{ row['Relative Humidity'] }}</td>
+                        <td>{{ row['Atmospheric Pressure'] }}</td>
+                        <td>{{ row['Risk Level'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="chart-container">
+            <h2>Risk Level Trends</h2>
+            <canvas id="riskChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var ctx = document.getElementById('riskChart').getContext('2d');
+            
+            // Extracting data from the Jinja2 context
+            var labels = [{% for row in data %} '{{ row["created_at"] }}', {% endfor %}];
+            var riskLevels = [{% for row in data %} '{{ row["Risk Level"] }}', {% endfor %}];
+
+            // Convert Risk Level to numeric values if necessary
+            var numericRiskLevels = riskLevels.map(function(risk) {
+                if (risk === 'High') return 2;
+                if (risk === 'Medium') return 1;
+                return 0;
+            });
+
+            // Creating the chart
+            var riskChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Risk Level',
+                        data: numericRiskLevels,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            suggestedMax: 2,
+                            ticks: {
+                                callback: function(value) {
+                                    if (value === 0) return 'Low';
+                                    if (value === 1) return 'Medium';
+                                    if (value === 2) return 'High';
+                                    return value;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    var riskLevel = context.raw;
+                                    if (riskLevel === 2) return 'High';
+                                    if (riskLevel === 1) return 'Medium';
+                                    return 'Low';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
